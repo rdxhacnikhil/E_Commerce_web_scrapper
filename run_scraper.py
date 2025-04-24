@@ -77,6 +77,8 @@
 #     main()
 # run_scraper.py
 # run_scraper.py (updated)
+from scraping.reliance_scraper import scrape_reliance_best_selling,scrape_reliance_5g_smartphones, setup_driver as reliance_driver_setup
+
 import argparse
 from scraping.flipkart_scraper import scrape_flipkart_mobiles, setup_driver as flipkart_driver_setup, save_data
 from scraping.amazon_scraper import get_amazon_mobile_data
@@ -87,22 +89,22 @@ def main():
     parser = argparse.ArgumentParser(description="Mobile Scraper CLI")
     parser.add_argument(
         "--site",
-        choices=["flipkart", "amazon", "croma", "all"],
+        choices=["flipkart", "amazon", "croma","reliance", "all"],
         required=True,
         help="Choose which site to scrape: flipkart, amazon, croma, or all"
     )
-    # parser.add_argument(
-    #     "--pages",
-    #     type=int,
-    #     default=40,
-    #     help="Number of pages to scrape (for Flipkart and Amazon)"
-    # )
     parser.add_argument(
-    "--limit",
-    type=int,
-    default=1000,
-    help="Maximum number of products to scrape (for Croma)"
+        "--pages",
+        type=int,
+        default=12,
+        help="Number of pages to scrape (for Flipkart and Amazon)"
     )
+    # parser.add_argument(
+    # "--limit",
+    # type=int,
+    # default=1000,
+    # help="Maximum number of products to scrape (for Croma)"
+    # )
 
     args = parser.parse_args()
 
@@ -130,7 +132,18 @@ def main():
             driver = flipkart_driver_setup()  # Shared driver setup
             products = get_amazon_mobile_data(driver, pages=args.pages)
             save_data(products, filename="data/amazon_mobiles.csv")
-            
+        
+        elif args.site == "reliance":
+            print("📱 Starting Reliance Digital scraper...")
+            driver = reliance_driver_setup()
+            products = scrape_reliance_best_selling(driver, pages=args.pages)
+            save_data(products, filename="data/reliance_mobiles.csv")
+        elif args.site == "reliance_5g":
+            print("Starting Reliance 5G smartphones scraper...")
+            driver = flipkart_driver_setup()  # or a shared setup_driver
+            products = scrape_reliance_5g_smartphones(driver, pages=args.pages)
+            save_data(products, filename="data/reliance_5g_mobiles.csv")
+
         elif args.site == "all":
             print("Starting all scrapers...")
             driver = croma_driver_setup()
@@ -149,6 +162,15 @@ def main():
             print("Starting Amazon scraper...")
             amazon_products = get_amazon_mobile_data(driver, pages=args.pages)
             save_data(amazon_products, filename="data/amazon_mobiles.csv")
+
+            # Reliance
+            print("📱 Starting Reliance Digital scraper...")
+            # reliance_products = scrape_reliance_products(driver, pages=args.pages)
+            products_1 = scrape_reliance_best_selling(driver, pages=args.pages)
+            save_data(products_1, filename="data/reliance_best_selling.csv")
+
+            products_2 = scrape_reliance_5g_smartphones(driver, pages=args.pages)
+            save_data(products_2, filename="data/reliance_5g_smartphones.csv")
 
     finally:
         if driver:
