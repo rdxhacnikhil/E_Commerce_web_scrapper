@@ -235,9 +235,11 @@ def scrape_croma_products(driver, max_products=1000):
                     EC.visibility_of_element_located((By.CSS_SELECTOR, "span.amount.plp-srp-new-amount"))
                 ).text.replace('₹', '').replace(',', '').strip(),
                 'url': card.find_element(By.CSS_SELECTOR, "a[href^='/']").get_attribute("href"),
-                'rating': (card.find_element(By.CSS_SELECTOR, "span.rating-text").text.split()[0]
-                           if card.find_elements(By.CSS_SELECTOR, "span.rating-text")
-                           else 'N/A')
+                'rating': (
+                    card.find_element(By.CSS_SELECTOR, "span.rating-text").text.split()[0]
+                    if card.find_elements(By.CSS_SELECTOR, "span.rating-text") else 'N/A'
+                ),
+                'image': card.find_element(By.CSS_SELECTOR, "img").get_attribute("src")
             }
             products.append(product)
 
@@ -246,9 +248,15 @@ def scrape_croma_products(driver, max_products=1000):
                 break
 
         except Exception as e:
-            print(f"[Croma] Partial extraction: {str(e)[:50]}")
+            print(f"[Croma] Partial extraction error: {str(e)[:50]}")
 
     save_data(products)
     return products
+if __name__ == "__main__":
+    driver = setup_driver()
+    try:
+        scrape_croma_products(driver, max_products=1000)  # Adjust max_products if needed
+    finally:
+        driver.quit()
 
 

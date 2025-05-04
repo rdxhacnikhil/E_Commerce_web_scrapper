@@ -1,5 +1,5 @@
 from scraping.croma_scraper import setup_driver, scrape_croma_products
-from scraping.flipkart_scraper import save_data  # Make sure save_data is accessible
+from scraping.flipkart_mobiles import save_data  # Make sure save_data is accessible
 
 driver = setup_driver()
 driver.get("https://www.croma.com/phones-wearables/c/1")
