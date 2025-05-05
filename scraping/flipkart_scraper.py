@@ -79,17 +79,23 @@ import time
 import pandas as pd
 import os
 import json
+import random
 
 def setup_driver():
     options = Options()
-    # options.add_argument('--headless')  # Disable for debugging
+    # Uncomment for headless mode (useful for automated servers)
+    # options.add_argument('--headless')  
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
     options.add_argument('--window-size=1920,1080')
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
-    
+    # Ignore SSL errors (more comprehensive)
+    options.add_argument('--ignore-certificate-errors')
+    options.add_argument('--ignore-ssl-errors')
+    options.add_argument('--incognito')
+
     # Set realistic user agent
     user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     options.add_argument(f'user-agent={user_agent}')
@@ -139,7 +145,7 @@ def scrape_product(item):
         print(f"Error parsing product: {str(e)[:100]}")
         return None
 
-def scrape_flipkart_mobiles(driver, pages=3):
+def scrape_flipkart_mobiles(driver, pages=40):
     all_products = []
     
     for page in range(1, pages + 1):
@@ -148,10 +154,13 @@ def scrape_flipkart_mobiles(driver, pages=3):
         
         try:
             driver.get(url)
-            
-            # Wait for either type of product container to load
+            print("Page title:", driver.title)
+            time.sleep(3 + random.uniform(1, 2))  # 3 to 5 seconds delay to mimic human browsing
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(2)
+            # Wait for product containers to load, improved selector
             WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-id], div._1AtVbE, div._2kHMtA"))
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div[data-id], div._1AtVbE, div._2kHMtA"))
             )
             time.sleep(2)  # Additional delay for stability
             
@@ -182,6 +191,9 @@ def scrape_flipkart_mobiles(driver, pages=3):
             
             all_products.extend(page_products)
             print(f"Page {page} complete - Valid products: {len(page_products)}")
+            if not page_products:
+                print(f"No valid products found on page {page}. Stopping early.")
+                break
             
         except Exception as e:
             print(f"Error scraping page {page}: {str(e)[:100]}")
@@ -222,3 +234,4 @@ if __name__ == "__main__":
     finally:
         driver.quit()
         print("Driver closed.")
+

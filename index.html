@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Price Comparison</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .dropdown-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .select2-container {
+            width: 50% !important;
+            margin: 0 auto;
+        }
+        .cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        .card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            width: 300px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .card.best-price {
+            border: 2px solid #28a745;
+            background-color: #e6ffe6;
+        }
+        .card:hover {
+            transform: scale(1.02);
+        }
+        .card h3 {
+            margin: 0 0 10px;
+            color: #333;
+            font-size: 1.2em;
+        }
+        .card p {
+            margin: 5px 0;
+            color: #555;
+        }
+        .card a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .card a:hover {
+            text-decoration: underline;
+        }
+        .error-message, .no-results {
+            text-align: center;
+            color: #d9534f;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+        @media (max-width: 768px) {
+            .select2-container {
+                width: 90% !important;
+            }
+            .card {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mobile Price Comparison</h1>
+        <div class="dropdown-container">
+            <select id="mobileSelect" class="mobile-select">
+                <option value="">Select a Mobile</option>
+            </select>
+        </div>
+        <div id="cardsContainer" class="cards-container"></div>
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+        <div id="noResults" class="no-results" style="display: none;">No products found for the selected mobile.</div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Initialize Select2 for searchable dropdown
+            $('#mobileSelect').select2({
+                placeholder: "Select a Mobile",
+                allowClear: true
+            });
+
+            // Fetch products from API
+            $.ajax({
+                url: '[invalid url, do not cite]
+                method: 'GET',
+                success: function(data) {
+                    if (data && Array.isArray(data)) {
+                        // Get unique mobile names (case-insensitive)
+                        const mobileNames = [...new Set(data.map(item => item.mobile_name))].sort();
+                        mobileNames.forEach(name => {
+                            // Capitalize first letter of each word for display
+                            const displayName = name.replace(/\b\w/g, c => c.toUpperCase());
+                            $('#mobileSelect').append(`<option value="${name}">${displayName}</option>`);
+                        });
+
+                        // Handle mobile selection
+                        $('#mobileSelect').on('change', function() {
+                            const selectedMobile = $(this).val();
+                            const cardsContainer = $('#cardsContainer');
+                            const noResults = $('#noResults');
+                            cardsContainer.empty();
+                            noResults.hide();
+
+                            if (selectedMobile) {
+                                // Filter products for selected mobile
+                                const filteredProducts = data.filter(item => item.mobile_name === selectedMobile);
+
+                                if (filteredProducts.length === 0) {
+                                    noResults.show();
+                                    return;
+                                }
+
+                                // Find the best price
+                                const prices = filteredProducts
+                                    .map(p => parseFloat(p.price))
+                                    .filter(p => !isNaN(p));
+                                const minPrice = Math.min(...prices);
+
+                                // Create cards for each product
+                                filteredProducts.forEach(product => {
+                                    const isBestPrice = parseFloat(product.price) === minPrice;
+                                    const card = `
+                                        <div class="card ${isBestPrice ? 'best-price' : ''}">
+                                            <h3>${product.full_name || product.mobile_name.replace(/\b\w/g, c => c.toUpperCase())}</h3>
+                                            <p><strong>Source:</strong> ${product.source}</p>
+                                            <p><strong>Color:</strong> ${product.color || 'N/A'}</p>
+                                            <p><strong>Price:</strong> ₹${product.price || 'N/A'}</p>
+                                            <p><strong>Rating:</strong> ${product.rating || 'N/A'}</p>
+                                            <p><strong>Reviews:</strong> ${product.ratings_count || 'N/A'}</p>
+                                            <p><strong>Delivery:</strong> ${product.delivery || 'N/A'}</p>
+                                            ${product.url ? `<p><a href="${product.url}" target="_blank">View on ${product.source}</a></p>` : ''}
+                                        </div>
+                                    `;
+                                    cardsContainer.append(card);
+                                });
+                            }
+                        });
+                    } else {
+                        $('#errorMessage').text('No products found.').show();
+                    }
+                },
+                error: function() {
+                    $('#errorMessage').text('Error fetching data. Please try again later.').show();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
